@@ -1,6 +1,6 @@
-# Install (tested only on Ubuntu 12.04)
+## Install (tested only on Ubuntu 12.04)
 
-## PhantomJS install
+### PhantomJS install
 
     cd /opt/
     wget https://phantomjs.googlecode.com/files/phantomjs-1.9.1-linux-x86_64.tar.bz2
@@ -11,7 +11,7 @@
     echo 'export PATH=$PATH:/opt/phantomjs-1.9.1-linux-x86_64/bin' >> ~/.bashrc
     source ~/.bashrc
 
-## Python install part
+### Python install part
 
     sudo apt-get install python-setuptools
     sudo apt-get install python-rsvg
@@ -20,17 +20,19 @@
     sudo pip install bottle
     sudo pip install docopt
 
-# Generate an SVG from a D3.js charts, graphs, maps,...
+## Time for action
+
+### Generate an SVG from a D3.js charts, graphs, maps,...
 
     phantomjs svg_d3.js http://congress.joshreyes.com timeline > my_svg.svg
 
-# Convert to image with ImageMagick (RSVG or other tools can be used)
+### Convert to image with ImageMagick (RSVG or other tools can be used)
 
     convert my_svg.svg -background white -flatten my_jpg.jpg
 
-# My solution
+## My solution
 
-## Web side
+### Web side
 
 Launch
 
@@ -46,12 +48,20 @@ If you want to change the default png name
 
     python phantom_svg_retriever.py no_server http://congress.joshreyes.com timeline my_new_name.png
 
-# Sources:
-https://blogs.law.harvard.edu/jreyes/2012/12/13/render-d3-js-driven-svg-server-side/
-http://charlesleifer.com/blog/building-bookmarking-service-python-and-phantomjs/
-http://techslides.com/grabbing-html-source-code-with-phantomjs-or-casperjs/
+In both case, see  your directory: a new png file was created
 
-# Others way to do it
-http://d3export.cancan.cshl.edu
-## With Fabric Js, convert to Canvas and after you can convert to image
-http://jsdo.it/_shimizu/KcEf
+## Sources:
+
+### Directly related
+
+ * https://blogs.law.harvard.edu/jreyes/2012/12/13/render-d3-js-driven-svg-server-side/
+ * http://charlesleifer.com/blog/building-bookmarking-service-python-and-phantomjs/
+ * http://techslides.com/grabbing-html-source-code-with-phantomjs-or-casperjs/
+
+### Others way to do it
+
+ * http://d3export.cancan.cshl.edu
+
+### With Fabric Js, convert to Canvas and after you can convert to image
+
+ * http://jsdo.it/_shimizu/KcEf
