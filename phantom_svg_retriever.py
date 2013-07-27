@@ -6,6 +6,7 @@
 Usage:
   phantom_svg_retriever.py web
   phantom_svg_retriever.py no_server <url> <dom_id>
+  phantom_svg_retriever.py no_server <url> <dom_id> <image_name>
   phantom_svg_retriever.py (-h | --help)
   phantom_svg_retriever.py --version
 
@@ -81,9 +82,12 @@ def index():
 
 if __name__ == '__main__':
     arguments = docopt(__doc__, version='Phantom SVG retriever 0.1')
-    #print(arguments)
-    #import ipdb;ipdb.set_trace()
-    if 'web' in arguments.keys():
+    print(arguments)
+    if arguments.get('web') == True:
         run(host='localhost', port=8080, reloader=True)
-    if 'no_server' in arguments.keys():
-        executePhantomSVG("http://congress.joshreyes.com", "us-map", "my_us_map.png")
+    if  arguments.get('no_server') == True:
+        if arguments.get('<image_name>') != None:
+            img_name = arguments.get('<image_name>')
+        else:
+            img_name = "my_png.png"
+        executePhantomSVG("http://congress.joshreyes.com", "us-map", img_name)
