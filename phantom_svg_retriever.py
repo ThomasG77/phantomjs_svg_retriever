@@ -19,7 +19,7 @@ Options:
 from bottle import route, request, response, run, template, debug
 from PIL import Image
 from docopt import docopt
-from lxml.html import parse
+#from lxml.html import parse
 import os
 import subprocess
 import tempfile
@@ -30,15 +30,18 @@ import rsvg
 APP_ROOT = os.path.dirname(os.path.realpath(__file__))
 PHANTOM = '/opt/phantomjs-1.9.1-linux-x86_64/bin/phantomjs'
 SCRIPT = os.path.join(APP_ROOT, 'svg_d3.js')
+SCRIPT_STYLE = os.path.join(APP_ROOT, 'svg_d3_style.js')
+SCRIPT_SVG = os.path.join(APP_ROOT, 'rasterize.js')
+BATIK_PATH = "/opt/batik-1.7/batik-rasterizer.jar"
 
 def convert(data, ofile):
     # Create rsvg object from retrieve SVG
     svg = rsvg.Handle(data=data)
-    
+
     # Get SVG size (we dont deal with ratio or user defined size
     x = svg.props.width
     y = svg.props.height
-    
+
     # Create a cairo canevas
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, x, y)
     context = cairo.Context(surface)
@@ -55,21 +58,54 @@ def convert(data, ofile):
 def executePhantomSVG (url, dom_id, file):
     params = [PHANTOM, SCRIPT, url, dom_id]
     output = subprocess.check_output(params)
-    doc = parse(url).getroot()
+    #doc = parse(url).getroot()
+    params_style = [PHANTOM, SCRIPT_STYLE, url]
+    output_style = subprocess.check_output(params_style)
     # We dont loop and consider only one style
-    if doc.body.head.find('style') != None:
-        my_style = doc.body.head.find('style').text
+    if output_style != "False\n":
         # Empty/Create the local file with style
-        f = open('style.css', 'w')
-        f.write(my_style)
+        css_name = "style.css"
+        f = open(css_name, 'w')
+        f.write(output_style)
         f.close()
         # Dirty way: no parsing just string manipulation...
         splitter = output.split('<svg')
-        svg_styles_files = splitter[0]
-        svg_str = splitter[1]
-        output = svg_styles_files + '<?xml-stylesheet type="text/css" href="style.css" ?>\n' + '<svg' + svg_str
+        if len(splitter) > 1:
+            svg_styles_files = splitter[0]
+            svg_str = splitter[1]
+        else:
+            svg_styles_files = ""
+            svg_str = splitter[0]
+        output = svg_styles_files + '<?xml-stylesheet type="text/css" href="' + css_name + '" ?>\n' + '<svg' + svg_str
 
-    convert(output, file)
+    output = '<?xml version="1.0" standalone="no"?>' + output
+    output = output.replace('<svg ', '<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" ')
+    svg_base_name = "my_svg"
+    svg_extension = ".svg"
+    svg_name = svg_base_name + svg_extension
+    f1 = open(svg_name, 'w')
+    f1.write(output)
+    f1.close()
+    # rsvg test case
+    #convert(output, file)
+    # Switch to batik: work with http://bl.ocks.org/mbostock/raw/4062085/ but rsvg or inkscape failed here
+    #params_batik = ["java", "-jar", BATIK_PATH, svg_name]
+    #output_generate = subprocess.check_output(params_batik)
+
+    svg = rsvg.Handle(data=output)
+    # Get SVG size (we dont deal with ratio or user defined size
+    x = svg.props.width
+    y = svg.props.height
+
+    # Phantomjs svg converter
+    params_phantomjs = [PHANTOM, SCRIPT_SVG, svg_name, svg_base_name + '.png', str(x) + '*' + str(y)]
+    output_phantomjs = subprocess.check_output(params_phantomjs)
+    img = Image.open(svg_base_name + '.png')
+    format = 'PNG'
+    img.save(file, format)
+    os.remove(svg_name)
+    os.remove(css_name)
+
 
 @route('/scrapesvg')
 def index():
@@ -85,10 +121,11 @@ def index():
     # Prepare to execute PhantomJS
     buf = cStringIO.StringIO()
     executePhantomSVG(url, dom_id, buf)
-    
+
     if validated:
         response.content_type = 'image/png'
         stream_content = buf.getvalue()
+        buf.close()
         #response.set_header('Content-Disposition', 'attachment; filename="test.png"')
         response.set_header('Content-Length', str(len(stream_content)))
         return stream_content

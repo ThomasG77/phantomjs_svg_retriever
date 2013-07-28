@@ -27,7 +27,7 @@ function extract(elementID) {
     if (status != 'success') {
       console.log("Failed to open the page.");
     } else {
-   //window.setTimeout(function () {
+   window.setTimeout(function () {
       var output = page.evaluate(serialize, elementID);
 
       var js = page.evaluate(function () {
@@ -42,7 +42,7 @@ function extract(elementID) {
 
       console.log(js.join('\n') + '\n' + output);
       phantom.exit();
-    //}, 5000);
+    }, 1500);
     }
   };
 }
