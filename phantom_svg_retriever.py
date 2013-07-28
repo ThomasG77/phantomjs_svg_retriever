@@ -34,27 +34,6 @@ SCRIPT_STYLE = os.path.join(APP_ROOT, 'svg_d3_style.js')
 SCRIPT_SVG = os.path.join(APP_ROOT, 'rasterize.js')
 BATIK_PATH = "/opt/batik-1.7/batik-rasterizer.jar"
 
-def convert(data, ofile):
-    # Create rsvg object from retrieve SVG
-    svg = rsvg.Handle(data=data)
-
-    # Get SVG size (we dont deal with ratio or user defined size
-    x = svg.props.width
-    y = svg.props.height
-
-    # Create a cairo canevas
-    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, x, y)
-    context = cairo.Context(surface)
-
-    # Add background color (using SVG, so transparency...)
-    context.set_source_rgb(1, 1, 1) # blue
-    context.rectangle(0, 0, x, y)
-    context.fill()
-
-    # Render context and write to file or stream
-    svg.render_cairo(context)
-    surface.write_to_png(ofile)
-
 def executePhantomSVG (url, dom_id, file):
     params = [PHANTOM, SCRIPT, url, dom_id]
     output = subprocess.check_output(params)
@@ -62,6 +41,7 @@ def executePhantomSVG (url, dom_id, file):
     params_style = [PHANTOM, SCRIPT_STYLE, url]
     output_style = subprocess.check_output(params_style)
     # We dont loop and consider only one style
+    css_name = None
     if output_style != "False\n":
         # Empty/Create the local file with style
         css_name = "style.css"
@@ -86,11 +66,6 @@ def executePhantomSVG (url, dom_id, file):
     f1 = open(svg_name, 'w')
     f1.write(output)
     f1.close()
-    # rsvg test case
-    #convert(output, file)
-    # Switch to batik: work with http://bl.ocks.org/mbostock/raw/4062085/ but rsvg or inkscape failed here
-    #params_batik = ["java", "-jar", BATIK_PATH, svg_name]
-    #output_generate = subprocess.check_output(params_batik)
 
     svg = rsvg.Handle(data=output)
     # Get SVG size (we dont deal with ratio or user defined size
@@ -104,7 +79,8 @@ def executePhantomSVG (url, dom_id, file):
     format = 'PNG'
     img.save(file, format)
     os.remove(svg_name)
-    os.remove(css_name)
+    if css_name != None:
+         os.remove(css_name)
 
 
 @route('/scrapesvg')
