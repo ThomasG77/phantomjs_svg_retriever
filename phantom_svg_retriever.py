@@ -19,6 +19,7 @@ Options:
 from bottle import route, request, response, run, template, debug
 from PIL import Image
 from docopt import docopt
+from lxml.html import parse
 import os
 import subprocess
 import tempfile
@@ -54,6 +55,20 @@ def convert(data, ofile):
 def executePhantomSVG (url, dom_id, file):
     params = [PHANTOM, SCRIPT, url, dom_id]
     output = subprocess.check_output(params)
+    doc = parse(url).getroot()
+    # We dont loop and consider only one style
+    if doc.body.head.find('style') != None:
+        my_style = doc.body.head.find('style').text
+        # Empty/Create the local file with style
+        f = open('style.css', 'w')
+        f.write(my_style)
+        f.close()
+        # Dirty way: no parsing just string manipulation...
+        splitter = output.split('<svg')
+        svg_styles_files = splitter[0]
+        svg_str = splitter[1]
+        output = svg_styles_files + '<?xml-stylesheet type="text/css" href="style.css" ?>\n' + '<svg' + svg_str
+
     convert(output, file)
 
 @route('/scrapesvg')
@@ -82,7 +97,6 @@ def index():
 
 if __name__ == '__main__':
     arguments = docopt(__doc__, version='Phantom SVG retriever 0.1')
-    print(arguments)
     if arguments.get('web') == True:
         run(host='localhost', port=8080, reloader=True)
     if  arguments.get('no_server') == True:
@@ -90,4 +104,4 @@ if __name__ == '__main__':
             img_name = arguments.get('<image_name>')
         else:
             img_name = "my_png.png"
-        executePhantomSVG("http://congress.joshreyes.com", "us-map", img_name)
+        executePhantomSVG(arguments.get('<url>'), arguments.get('<dom_id>'), img_name)
